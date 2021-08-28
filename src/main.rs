@@ -8,6 +8,7 @@ use std::thread;
 
 const MAX: u16 = 65535; // maximum port that we can sniff
 
+#[allow(dead_code)]
 struct Arguments {
     flag: String,
     ipaddr: IpAddr,
@@ -23,11 +24,11 @@ impl Arguments {
         }
         let f = args[1].clone();
         if let Ok(ipaddr) = IpAddr::from_str(&f) {
-            return Ok(Arguments {
+            Ok(Arguments {
                 flag: String::from(""),
                 ipaddr,
                 threads: 4,
-            });
+            })
         } else {
             let flag = args[1].clone();
             if flag.contains("-h") || flag.contains("-help") && args.len() == 2 {
@@ -35,9 +36,9 @@ impl Arguments {
                     " Usage: -j to select how many threads you want
                 \r\n        -h or -help to show this help message"
                 );
-                return Err("help");
+                Err("help")
             } else if flag.contains("-h") || flag.contains("-help") {
-                return Err("to many arguments");
+                Err("to many arguments")
             } else if flag.contains("-j") {
                 let ipaddr = match IpAddr::from_str(&args[3]) {
                     Ok(s) => s,
@@ -47,13 +48,13 @@ impl Arguments {
                     Ok(s) => s,
                     Err(_) => return Err("failed to parse thread number"),
                 };
-                return Ok(Arguments {
+                Ok(Arguments {
                     threads,
                     flag,
                     ipaddr,
-                });
+                })
             } else {
-                return Err("invalid syntax");
+                Err("invalid syntax")
             }
         }
     }
@@ -62,13 +63,10 @@ impl Arguments {
 fn scan(tx: Sender<u16>, start_port: u16, addr: IpAddr, num_threads: u16) {
     let mut port: u16 = start_port + 1;
     loop {
-        match TcpStream::connect((addr, port)) {
-            Ok(_) => {
-                print!(".");
-                io::stdout().flush().unwrap();
-                tx.send(port).unwrap();
-            }
-            Err(_) => {}
+        if TcpStream::connect((addr, port)).is_ok() {
+            print!(".");
+            io::stdout().flush().unwrap();
+            tx.send(port).unwrap();
         }
 
         if (MAX - port) <= num_threads {
@@ -108,8 +106,8 @@ fn main() {
         out.push(p);
     }
 
-    println!("");
-    out.sort();
+    println!();
+    out.sort_unstable();
     for v in out {
         println!("{} is open", v);
     }
